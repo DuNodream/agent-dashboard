@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>学徒 Dashboard</title>
+<style>
+  :root {
+    --bg: #0d0d1a;
+    --panel: #13131f;
+    --border: #1e1e33;
+    --green: #2dd4bf;
+    --red: #f87171;
+    --yellow: #fbbf24;
+    --blue: #60a5fa;
+    --purple: #a78bfa;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --accent: #2dd4bf;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, 'PingFang SC', sans-serif; }
+
+  /* NAV */
+  nav {
+    display: flex; align-items: center; gap: 24px;
+    padding: 12px 24px; border-bottom: 1px solid var(--border);
+    background: var(--panel); position: sticky; top: 0; z-index: 99;
+  }
+  .nav-brand { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 16px; color: var(--accent); }
+  .nav-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+  nav a { color: var(--muted); text-decoration: none; font-size: 14px; transition: color .2s; }
+  nav a:hover, nav a.active { color: var(--text); }
+  .nav-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+  .status-badge { background: #0f2922; color: var(--green); border: 1px solid var(--green); border-radius: 99px; padding: 3px 10px; font-size: 12px; }
+  .updated { color: var(--muted); font-size: 12px; }
+
+  /* LAYOUT */
+  .container { max-width: 1400px; margin: 0 auto; padding: 24px; }
+
+  /* TOP STATS */
+  .stats-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 24px; }
+  .stat-card {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+    padding: 16px 20px; position: relative; overflow: hidden;
+  }
+  .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+  .stat-card.blue::before { background: var(--blue); }
+  .stat-card.green::before { background: var(--green); }
+  .stat-card.yellow::before { background: var(--yellow); }
+  .stat-card.purple::before { background: var(--purple); }
+  .stat-card.red::before { background: var(--red); }
+  .stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 6px; }
+  .stat-value { font-size: 32px; font-weight: 700; line-height: 1; }
+  .stat-sub { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .stat-card.blue .stat-value { color: var(--blue); }
+  .stat-card.green .stat-value { color: var(--green); }
+  .stat-card.yellow .stat-value { color: var(--yellow); }
+  .stat-card.purple .stat-value { color: var(--purple); }
+  .stat-card.red .stat-value { color: var(--red); }
+
+  /* GRID */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .col-span-2 { grid-column: span 2; }
+
+  /* CARD */
+  .card {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 20px;
+  }
+  .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .card-title { font-size: 15px; font-weight: 600; }
+  .card-meta { font-size: 12px; color: var(--muted); }
+
+  /* RADAR */
+  .radar-wrap { display: flex; justify-content: center; padding: 8px 0; }
+  svg text { font-family: -apple-system, 'PingFang SC', sans-serif; }
+
+  /* SKILL TAGS */
+  .skill-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+  .skill-tag {
+    background: #1a1a2e; border: 1px solid var(--border); border-radius: 6px;
+    padding: 6px 12px; font-size: 12px; display: flex; align-items: center; gap: 6px;
+  }
+  .skill-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .skill-tag.mx { border-color: #2d4a3e; }
+  .skill-tag.mx .skill-dot { background: var(--green); }
+  .skill-tag.stock { border-color: #3d3020; }
+  .skill-tag.stock .skill-dot { background: var(--yellow); }
+  .skill-tag.core { border-color: #2d3a5e; }
+  .skill-tag.core .skill-dot { background: var(--blue); }
+  .skill-tag.tool { border-color: #3a2d5e; }
+  .skill-tag.tool .skill-dot { background: var(--purple); }
+
+  /* MEMORY TABLE */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { color: var(--muted); font-weight: 500; padding: 6px 8px; text-align: left; border-bottom: 1px solid var(--border); font-size: 11px; text-transform: uppercase; }
+  td { padding: 8px; border-bottom: 1px solid var(--border); }
+  tr:last-child td { border-bottom: none; }
+  .badge { display: inline-block; border-radius: 4px; padding: 2px 8px; font-size: 11px; font-weight: 600; }
+  .badge.ready { background: #0f2922; color: var(--green); }
+  .badge.active { background: #0f2922; color: var(--green); }
+  .badge.error { background: #2a1010; color: var(--red); }
+  .badge.warn { background: #2a1f00; color: var(--yellow); }
+
+  /* STOCK */
+  .pnl-pos { color: var(--green); }
+  .pnl-neg { color: var(--red); }
+
+  /* CRON */
+  .cron-code { font-family: monospace; font-size: 12px; color: var(--muted); }
+
+  /* ABILITIES */
+  .ability-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .ability-name { width: 80px; font-size: 13px; flex-shrink: 0; }
+  .ability-bar-bg { flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+  .ability-bar { height: 100%; border-radius: 3px; }
+  .ability-score { width: 28px; text-align: right; font-size: 13px; font-weight: 600; flex-shrink: 0; }
+
+  /* TAGS */
+  .talent-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .talent-item {
+    background: #1a1a2e; border: 1px solid var(--border); border-radius: 8px;
+    padding: 10px 12px; display: flex; justify-content: space-between; align-items: flex-start;
+  }
+  .talent-name { font-size: 13px; font-weight: 600; }
+  .talent-desc { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .talent-badge {
+    width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; flex-shrink: 0; margin-left: 8px;
+  }
+  .tb-s { background: #1a3a2a; color: var(--green); }
+  .tb-a { background: #1a2a3a; color: var(--blue); }
+  .tb-b { background: #2a2a1a; color: var(--yellow); }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  @media (max-width: 900px) {
+    .stats-row { grid-template-columns: repeat(3, 1fr); }
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    .col-span-2 { grid-column: span 1; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-brand">
+    <span>🦐</span>
+    <span>学徒 Dashboard</span>
+    <div class="nav-dot"></div>
+  </div>
+  <a href="#overview" class="active">总览</a>
+  <a href="#skills">Skills</a>
+  <a href="#memory">记忆</a>
+  <a href="#stock">股票</a>
+  <a href="#cron">定时任务</a>
+  <div class="nav-right">
+    <span class="status-badge">● ONLINE</span>
+    <span class="updated" id="updated-time">--</span>
+  </div>
+</nav>
+
+<div class="container">
+
+  <!-- TOP STATS -->
+  <div class="stats-row" id="overview">
+    <div class="stat-card blue">
+      <div class="stat-label">SKILLS</div>
+      <div class="stat-value" id="skill-count">17</div>
+      <div class="stat-sub">已安装技能包</div>
+    </div>
+    <div class="stat-card green">
+      <div class="stat-label">SESSIONS</div>
+      <div class="stat-value" id="session-count">5</div>
+      <div class="stat-sub">累计会话次数</div>
+    </div>
+    <div class="stat-card yellow">
+      <div class="stat-label">MEMORY</div>
+      <div class="stat-value">3</div>
+      <div class="stat-sub">记忆文件</div>
+    </div>
+    <div class="stat-card purple">
+      <div class="stat-label">MILESTONES</div>
+      <div class="stat-value">1</div>
+      <div class="stat-sub">成长里程碑</div>
+    </div>
+    <div class="stat-card red">
+      <div class="stat-label">STREAK</div>
+      <div class="stat-value" id="streak">0</div>
+      <div class="stat-sub">连续学习天数</div>
+    </div>
+  </div>
+
+  <!-- ROW 1: 能力雷达 + 天赋标签 -->
+  <div class="grid-2" id="skills">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">⚡ 能力雷达</span>
+        <span class="card-meta">基于已安装 Skill 推断</span>
+      </div>
+      <!-- Abilities -->
+      <div class="ability-row">
+        <span class="ability-name">编程开发</span>
+        <div class="ability-bar-bg"><div class="ability-bar" style="width:78%;background:linear-gradient(90deg,#2dd4bf,#60a5fa)"></div></div>
+        <span class="ability-score" style="color:var(--green)">78</span>
+      </div>
+      <div class="ability-row">
+        <span class="ability-name">金融分析</span>
+        <div class="ability-bar-bg"><div class="ability-bar" style="width:82%;background:linear-gradient(90deg,#fbbf24,#f87171)"></div></div>
+        <span class="ability-score" style="color:var(--yellow)">82</span>
+      </div>
+      <div class="ability-row">
+        <span class="ability-name">信息搜索</span>
+        <div class="ability-bar-bg"><div class="ability-bar" style="width:75%;background:linear-gradient(90deg,#60a5fa,#a78bfa)"></div></div>
+        <span class="ability-score" style="color:var(--blue)">75</span>
+      </div>
+      <div class="ability-row">
+        <span class="ability-name">自我成长</span>
+        <div class="ability-bar-bg"><div class="ability-bar" style="width:65%;background:linear-gradient(90deg,#a78bfa,#2dd4bf)"></div></div>
+        <span class="ability-score" style="color:var(--purple)">65</span>
+      </div>
+      <div class="ability-row">
+        <span class="ability-name">写作表达</span>
+        <div class="ability-bar-bg"><div class="ability-bar" style="width:60%;background:linear-gradient(90deg,#f87171,#fbbf24)"></div></div>
+        <span class="ability-score" style="color:var(--red)">60</span>
+      </div>
+      <div class="ability-row">
+        <span class="ability-name">浏览器操作</span>
+        <div class="ability-bar-bg"><div class="ability-bar" style="width:70%;background:linear-gradient(90deg,#2dd4bf,#a78bfa)"></div></div>
+        <span class="ability-score" style="color:var(--green)">70</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">🏷️ 天赋标签</span>
+        <span class="card-meta">角色画像</span>
+      </div>
+      <div class="talent-grid">
+        <div class="talent-item">
+          <div><div class="talent-name">代码工匠</div><div class="talent-desc">Karpathy 准则加持</div></div>
+          <div class="talent-badge tb-s">S</div>
+        </div>
+        <div class="talent-item">
+          <div><div class="talent-name">市场猎手</div><div class="talent-desc">A股+妙想五件套</div></div>
+          <div class="talent-badge tb-a">A</div>
+        </div>
+        <div class="talent-item">
+          <div><div class="talent-name">信息雷达</div><div class="talent-desc">16引擎搜索覆盖</div></div>
+          <div class="talent-badge tb-a">A</div>
+        </div>
+        <div class="talent-item">
+          <div><div class="talent-name">持续进化</div><div class="talent-desc">自我改进闭环</div></div>
+          <div class="talent-badge tb-b">B</div>
+        </div>
+        <div class="talent-item">
+          <div><div class="talent-name">浏览器手</div><div class="talent-desc">自动化网页操控</div></div>
+          <div class="talent-badge tb-b">B</div>
+        </div>
+        <div class="talent-item">
+          <div><div class="talent-name">学徒心态</div><div class="talent-desc">长期积累协作</div></div>
+          <div class="talent-badge tb-s">S</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROW 2: Skill 列表 + 记忆仓库 -->
+  <div class="grid-2">
+    <div class="card" id="skills-list">
+      <div class="card-header">
+        <span class="card-title">🛠️ 已安装 Skills</span>
+        <span class="card-meta">17 个</span>
+      </div>
+      <div class="skill-grid">
+        <div class="skill-tag mx"><div class="skill-dot"></div>mx-data</div>
+        <div class="skill-tag mx"><div class="skill-dot"></div>mx-search</div>
+        <div class="skill-tag mx"><div class="skill-dot"></div>mx-xuangu</div>
+        <div class="skill-tag mx"><div class="skill-dot"></div>mx-zixuan</div>
+        <div class="skill-tag mx"><div class="skill-dot"></div>mx-moni</div>
+        <div class="skill-tag mx"><div class="skill-dot"></div>mx-stocks-screener</div>
+        <div class="skill-tag stock"><div class="skill-dot"></div>a-stock-trading</div>
+        <div class="skill-tag stock"><div class="skill-dot"></div>worldcup-prediction</div>
+        <div class="skill-tag core"><div class="skill-dot"></div>multi-search-engine</div>
+        <div class="skill-tag core"><div class="skill-dot"></div>browser-automation</div>
+        <div class="skill-tag core"><div class="skill-dot"></div>self-improving-agent</div>
+        <div class="skill-tag core"><div class="skill-dot"></div>karpathy-guidelines</div>
+        <div class="skill-tag tool"><div class="skill-dot"></div>skillscan</div>
+        <div class="skill-tag tool"><div class="skill-dot"></div>auto-updater</div>
+        <div class="skill-tag tool"><div class="skill-dot"></div>coding</div>
+        <div class="skill-tag tool"><div class="skill-dot"></div>learning</div>
+        <div class="skill-tag tool"><div class="skill-dot"></div>writing</div>
+      </div>
+      <div style="margin-top:14px;display:flex;gap:16px;font-size:12px;color:var(--muted)">
+        <span><span style="color:var(--green)">●</span> 妙想金融</span>
+        <span><span style="color:var(--yellow)">●</span> 股票/娱乐</span>
+        <span><span style="color:var(--blue)">●</span> 核心能力</span>
+        <span><span style="color:var(--purple)">●</span> 工具</span>
+      </div>
+    </div>
+
+    <div class="card" id="memory">
+      <div class="card-header">
+        <span class="card-title">🧠 记忆仓库</span>
+        <span class="card-meta">durable context</span>
+      </div>
+      <table>
+        <tr><th>文件</th><th>内容摘要</th><th>状态</th></tr>
+        <tr>
+          <td>MEMORY.md</td>
+          <td style="color:var(--muted);font-size:12px">主人信息、偏好、技术背景</td>
+          <td><span class="badge ready">ready</span></td>
+        </tr>
+        <tr>
+          <td>achievements.json</td>
+          <td style="color:var(--muted);font-size:12px">里程碑、skill使用记录</td>
+          <td><span class="badge ready">ready</span></td>
+        </tr>
+        <tr>
+          <td>STATUS.json</td>
+          <td style="color:var(--muted);font-size:12px">会话数、已安装skill列表</td>
+          <td><span class="badge ready">ready</span></td>
+        </tr>
+      </table>
+      <div style="margin-top:16px;padding:12px;background:#0d0d1a;border-radius:8px;font-size:12px;color:var(--muted);line-height:1.6">
+        <div style="color:var(--text);margin-bottom:4px">📌 近期记录</div>
+        2026-05-28 · Agent 框架初始搭建完成<br>
+        2026-05-28 · 安装 17 个 skill，含妙想金融五件套<br>
+        2026-05-28 · 配置 MX_APIKEY 永久环境变量
+      </div>
+    </div>
+  </div>
+
+  <!-- ROW 3: 股票模块 -->
+  <div class="grid-3" id="stock">
+    <div class="card col-span-2">
+      <div class="card-header">
+        <span class="card-title">📊 A股持仓概览</span>
+        <span class="card-meta">数据由 a-stock-trading-assistant 提供</span>
+      </div>
+      <table>
+        <tr><th>账户/标的</th><th>市值</th><th>成本</th><th>盈亏</th><th>今日涨跌</th><th>状态</th></tr>
+        <tr>
+          <td colspan="6" style="color:var(--muted);font-size:12px;text-align:center;padding:20px">
+            暂无持仓数据 · 使用 a-stock-trading-assistant skill 后自动填充
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">🔍 妙想选股信号</span>
+        <span class="card-meta">mx-xuangu</span>
+      </div>
+      <div style="color:var(--muted);font-size:12px;text-align:center;padding:20px">
+        暂无信号<br>配置 MX_APIKEY 后激活
+      </div>
+      <div style="margin-top:8px;padding:10px;background:#0d0d1a;border-radius:6px;font-size:12px">
+        <div style="color:var(--muted);margin-bottom:6px">API 状态</div>
+        <div style="display:flex;justify-content:space-between">
+          <span>MX_APIKEY</span>
+          <span class="badge active">已配置</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:6px">
+          <span>EM_API_KEY</span>
+          <span class="badge active">已配置</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROW 4: 定时任务 + 成长日志 -->
+  <div class="grid-2" id="cron">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">⏱️ 定时任务</span>
+        <span class="card-meta">0 个活跃</span>
+      </div>
+      <table>
+        <tr><th>任务名</th><th>Cron</th><th>时间</th><th>状态</th></tr>
+        <tr>
+          <td colspan="4" style="color:var(--muted);font-size:12px;text-align:center;padding:16px">
+            暂无定时任务 · 添加后在此显示
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">📈 成长轨迹</span>
+        <span class="card-meta">milestones</span>
+      </div>
+      <div style="position:relative;padding-left:20px">
+        <div style="position:absolute;left:6px;top:0;bottom:0;width:2px;background:var(--border)"></div>
+        <div style="position:relative;margin-bottom:16px">
+          <div style="position:absolute;left:-17px;top:4px;width:10px;height:10px;border-radius:50%;background:var(--green);border:2px solid var(--bg)"></div>
+          <div style="font-size:13px">Agent 框架初始搭建</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">2026-05-28 · skills: 3 → 17</div>
+        </div>
+        <div style="position:relative;margin-bottom:16px">
+          <div style="position:absolute;left:-17px;top:4px;width:10px;height:10px;border-radius:50%;background:var(--yellow);border:2px solid var(--bg)"></div>
+          <div style="font-size:13px">妙想金融五件套安装</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">2026-05-28 · MX_APIKEY 配置完成</div>
+        </div>
+        <div style="position:relative">
+          <div style="position:absolute;left:-17px;top:4px;width:10px;height:10px;border-radius:50%;background:var(--blue);border:2px solid var(--bg)"></div>
+          <div style="font-size:13px">Dashboard 上线</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">2026-05-28 · GitHub Pages 部署</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // Update timestamp
+  document.getElementById('updated-time').textContent = '更新于 ' + new Date().toLocaleString('zh-CN', {month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+
+  // Smooth scroll for nav links
+  document.querySelectorAll('nav a').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      document.querySelectorAll('nav a').forEach(x => x.classList.remove('active'));
+      a.classList.add('active');
+      const target = document.querySelector(a.getAttribute('href'));
+      if (target) target.scrollIntoView({behavior:'smooth', block:'start'});
+    });
+  });
+</script>
+</body>
+</html>
